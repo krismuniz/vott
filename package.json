@@ -1,0 +1,48 @@
+{
+  "name": "vott",
+  "version": "0.0.1",
+  "description": "A minimal, platform-agnostic framework for building conversational applications.",
+  "main": "./lib/vott.js",
+  "scripts": {
+    "dev": "npm install && npm run test",
+    "build": "cross-env BABEL_ENV=production babel src -d lib",
+    "test": "standard && cross-env NODE_ENV=test nyc ava --verbose",
+    "report": "nyc report --reporter=html",
+    "prepublish": "npm run build"
+  },
+  "author": "Kristian Muñiz <contact@krismuniz.com> (http://www.krismuniz.com)",
+  "license": "MIT",
+  "devDependencies": {
+    "ava": "0.15.2",
+    "babel-cli": "6.11.4",
+    "babel-plugin-transform-runtime": "6.12.0",
+    "babel-preset-es2015": "6.9.0",
+    "babel-register": "6.11.6",
+    "cross-env": "2.0.0",
+    "nyc": "7.1.0",
+    "standard": "7.1.2"
+  },
+  "ava": {
+    "require": [
+      "babel-core/register"
+    ],
+    "files": [
+      "test/*.js"
+    ]
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ],
+    "env": {
+      "development": {
+        "sourceMaps": "inline"
+      }
+    }
+  },
+  "standard": {
+    "ignore": [
+      "/lib/"
+    ]
+  }
+}
