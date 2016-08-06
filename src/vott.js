@@ -6,11 +6,11 @@ class Vott extends EventEmitter {
   constructor (config = {}) {
     super()
 
-    this.config = {}
-    this.config.tick_interval = 1000
-    this.config.max_thread_age = 1800000
-    this.config.autostart = true
-    this.config = Object.assign(this.config, config)
+    this.config = Object.assign({
+      tick_interval: 1000,
+      max_thread_age: 1800000,
+      autostart: true
+    }, config)
 
     this.started = false
     this.threads = new Map()

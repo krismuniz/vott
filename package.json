@@ -1,6 +1,6 @@
 {
   "name": "vott",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A minimal, platform-agnostic framework for building conversational applications.",
   "main": "./lib/vott.js",
   "scripts": {
