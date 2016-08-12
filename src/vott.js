@@ -103,7 +103,7 @@ class Vott extends EventEmitter {
       this.getChat(event.user.id, (chat) => {
         const { message, type } = event
 
-        if (chat) {
+        if (chat && event.chat_enabled) {
           chat.emit('response', message, type)
         } else {
           this.emit(event.type, bot, event)
