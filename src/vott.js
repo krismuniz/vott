@@ -60,7 +60,18 @@ class Vott extends EventEmitter {
       this.middleware[eventName].use(funcs)
       return this
     } else {
-      throw Error(`Middleware for '${eventName}' does not exist.`)
+      this.middleware.dispatch.use(
+        funcs.map((v) => {
+          return (bot, event, next) => {
+            if (event.type && event.type === eventName) {
+              v(bot, event, next)
+            } else {
+              next()
+            }
+          }
+        })
+      )
+      return this
     }
   }
 

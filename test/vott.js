@@ -54,7 +54,7 @@ test('[Vott#extend] passes instance and returns it', (t) => {
   })
 })
 
-test('[Vott#use] properly adds middleware to event', (t) => {
+test('[Vott#use] properly adds inbound and outbound middleware', (t) => {
   const bot = new Vott()
   const mockLayer = new Middleware()
   const mockMiddleware = (bot, message, next) => {
@@ -65,11 +65,17 @@ test('[Vott#use] properly adds middleware to event', (t) => {
   bot.use('inbound', mockMiddleware)
 
   t.deepEqual(bot.middleware.inbound, mockLayer)
-  t.throws(() => {
-    bot.use('unavailable_event', (bot, message, next) => {
-      next()
-    })
-  })
+})
+
+test('[Vott#use] properly adds dispatch middleware', (t) => {
+  const bot = new Vott()
+  const mockMiddleware = (bot, message, next) => {
+    next()
+  }
+
+  bot.use('message_received', mockMiddleware)
+  t.true(bot.middleware.dispatch._funcs.length === 1)
+  t.true(bot.middleware.dispatch._done === null)
 })
 
 test('[Vott#pass] passes message through middleware', (t) => {
@@ -188,8 +194,9 @@ test('[Vott#dispatch] passes dispatch event through middleware', (t) => {
     chat_enabled: false
   }
 
-  bot.use('dispatch', (bot, event, next) => {
+  bot.use('message_received', (bot, event, next) => {
     event.message.text = 'Hello'
+    event.random_stuff = 123
     next()
   })
 
@@ -206,11 +213,40 @@ test('[Vott#dispatch] passes dispatch event through middleware', (t) => {
       user: {
         id: '123'
       },
+      random_stuff: 123,
       chat_enabled: false,
       type: 'message_received'
     }
     t.deepEqual(bot, botInstance)
     t.deepEqual(event, finalEvent)
+  })
+})
+
+test('[Vott#dispatch] calls next() when no middleware for that event', (t) => {
+  const bot = new Vott()
+  const e = {
+    message: {
+      text: 'hi'
+    },
+    user: {
+      id: '123'
+    },
+    chat_enabled: false
+  }
+
+  /* should not be called, ever */
+  bot.use('foreign_event', (bot, event, next) => {
+    t.fail()
+  })
+
+  return new Promise((resolve, reject) => {
+    bot.on('message_received', (botInstance, event) => {
+      resolve({ botInstance, event })
+    })
+    bot.dispatch('message_received', e)
+  }).then(({ botInstance, event }) => {
+    t.deepEqual(bot, botInstance)
+    t.deepEqual(event, e)
   })
 })
 
