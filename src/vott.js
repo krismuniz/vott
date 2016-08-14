@@ -55,15 +55,15 @@ class Vott extends EventEmitter {
   /* ----------------------------- MIDDLEWARE ------------------------------ */
 
   /** adds middleware to event */
-  use (eventName, ...funcs) {
-    if (this.middleware[eventName]) {
-      this.middleware[eventName].use(funcs)
+  use (eventType, ...funcs) {
+    if (this.middleware[eventType]) {
+      this.middleware[eventType].use(funcs)
       return this
     } else {
       this.middleware.dispatch.use(
         funcs.map((v) => {
           return (bot, event, next) => {
-            if (event.type && event.type === eventName) {
+            if (event.event_type && event.event_type === eventType) {
               v(bot, event, next)
             } else {
               next()
@@ -76,9 +76,9 @@ class Vott extends EventEmitter {
   }
 
   /** passes event through middleware */
-  pass (eventName, event, done) {
-    if (this.middleware[eventName]) {
-      this.middleware[eventName].done((bot, event) => {
+  pass (eventType, event, done) {
+    if (this.middleware[eventType]) {
+      this.middleware[eventType].done((bot, event) => {
         done(bot, event)
       }).apply(this, event)
     } else {
@@ -108,16 +108,15 @@ class Vott extends EventEmitter {
 
   /** passes event through middleware after classifying it */
   dispatch (eventType, event) {
-    event.type = eventType
+    event.event_type = eventType
 
     this.pass('dispatch', event, (bot, event) => {
       this.getChat(event.user.id, (chat) => {
-        const { message, type } = event
-
         if (chat && event.chat_enabled) {
-          chat.emit('response', message, type)
+          const { message, event_type } = event
+          chat.emit('response', Object.assign(message, { event_type }))
         } else {
-          this.emit(event.type, bot, event)
+          this.emit(event.event_type, bot, event)
         }
       })
     })
@@ -160,7 +159,7 @@ class Vott extends EventEmitter {
     })
   }
 
-  /** removes a thread given an id and an (optional) eventName */
+  /** removes a thread given an id */
   removeThread (id) {
     this.getChat(id, (chat) => {
       if (chat) { chat.end() }

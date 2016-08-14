@@ -215,7 +215,7 @@ test('[Vott#dispatch] passes dispatch event through middleware', (t) => {
       },
       random_stuff: 123,
       chat_enabled: false,
-      type: 'message_received'
+      event_type: 'message_received'
     }
     t.deepEqual(bot, botInstance)
     t.deepEqual(event, finalEvent)
@@ -286,7 +286,7 @@ test('[Vott#dispatch] properly routes to active conversation', (t) => {
       chat_enabled: true
     })
   }).then((res) => {
-    t.deepEqual(res, { text: "I'm good", type: 'message_received' })
+    t.deepEqual(res, { text: "I'm good", event_type: 'message_received' })
   })
 })
 

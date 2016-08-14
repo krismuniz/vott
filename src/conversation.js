@@ -16,18 +16,17 @@ class Conversation extends EventEmitter {
     this.is_active = true
     this.level = 1
 
-    this.on('response', (response, type) => {
+    this.on('response', (message) => {
       if (this.latest_question) {
         this.level++
         this.responses.push({
           question: this.latest_question.question,
-          answer: response,
-          type: type
+          answer: message
         })
       }
 
-      if (this.handle) {
-        this.handle(Object.assign(response, { type }), this)
+      if (this.handle && message) {
+        this.handle(message, this)
       }
     })
   }
