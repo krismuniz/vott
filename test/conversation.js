@@ -1,28 +1,5 @@
 import test from 'ava'
 import Conversation from '../src/conversation'
-import { EventEmitter } from 'events'
-
-class MockBot extends EventEmitter {
-  constructor () {
-    super()
-    this.queue = []
-    this.conversations = new Map()
-  }
-
-  addMessage (message) {
-    this.queue.push(message)
-  }
-
-  process (message) {
-    if (typeof message === 'string') {
-      return { message: { text: message } }
-    } else {
-      return { message: message }
-    }
-  }
-
-  log (...args) {}
-}
 
 const source = {
   message: '* conversation starter *',
@@ -32,8 +9,7 @@ const source = {
 }
 
 test('[Conversation#constructor] properly instantiates class', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
+  const chat = new Conversation(source)
 
   /** should return true (event has a listener) */
   t.true(chat.emit('response', {}))
@@ -46,7 +22,6 @@ test('[Conversation#constructor] properly instantiates class', (t) => {
   t.deepEqual(chat.state, {})
   t.deepEqual(chat.source, source)
   t.deepEqual(chat.user, source.user)
-  t.deepEqual(chat.bot, bot)
 
   /** there shouldn't be a handler function */
   t.true(!chat.handle)
@@ -56,8 +31,7 @@ test('[Conversation#constructor] properly instantiates class', (t) => {
 })
 
 test('[Conversation#save] saves data into Conversation#data', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
+  const chat = new Conversation(source)
   const newData = { a: 'a' }
 
   chat.save(newData)
@@ -65,165 +39,202 @@ test('[Conversation#save] saves data into Conversation#data', (t) => {
   t.deepEqual(chat.state, Object.assign(newData, { b: 'b' }))
 })
 
-test('[Conversation#say] adds to queue; append Conversation#user to it', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-
-  chat.say('Hi!')
-  chat.say({ text: 'Hi!' })
-
-  t.deepEqual(bot.queue, [
-    { message: { text: 'Hi!' }, user: { id: '0' } },
-    { message: { text: 'Hi!' }, user: { id: '0' } }
-  ])
+test('[Conversation#say] properly emits add_message event', (t) => {
+  return new Promise((resolve, reject) => {
+    const chat = new Conversation(source)
+    let count = 0
+    let queue = []
+    chat.on('add_message', (source, message) => {
+      queue.push({ source, message })
+      count++
+      if (count === 2) {
+        resolve(queue)
+      }
+    })
+    chat.say('Hi!')
+    chat.say({ text: 'Hi!' })
+  }).then((value) => {
+    t.deepEqual(value[0], { source, message: 'Hi!' })
+    t.deepEqual(value[1], { source, message: { text: 'Hi!' } })
+  })
 })
 
 test('[Conversation#ask] adds question to queue', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-  const qHandler = (res, convo) => {}
+  return new Promise((resolve, reject) => {
+    const chat = new Conversation(source)
+    const qHandler = (res, convo) => {}
 
-  chat.ask('How are you?', qHandler)
+    chat.on('add_message', (source, message) => {
+      resolve({ source, message })
+    })
 
-  t.deepEqual(chat.queue[0], {
-    question: 'How are you?',
-    handler: qHandler,
-    level: 1
-  })
-
-  chat.next()
-  t.deepEqual(bot.queue[0], {
-    message: {
-      text: 'How are you?'
-    },
-    user: {
-      id: '0'
-    }
-  })
-  t.false(chat.queue.length > 0)
-})
-
-test('[Conversation#ask] process question as function', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-  bot.conversations.set(source.user.id, source)
-
-  const qHandler = (res, convo) => {}
-
-  chat.ask((chat) => {
     chat.ask('How are you?', qHandler)
-
     t.deepEqual(chat.queue[0], {
       question: 'How are you?',
       handler: qHandler,
       level: 1
     })
-
     chat.next()
+    t.false(chat.queue.length > 0)
+  }).then((value) => {
+    t.deepEqual(value, {
+      source,
+      message: 'How are you?'
+    })
+  })
+})
 
-    t.deepEqual(bot.queue[0], {
-      message: {
-        text: 'How are you?'
-      },
-      user: {
-        id: '0'
-      }
+test('[Conversation#ask] process question as function', (t) => {
+  return new Promise((resolve, reject) => {
+    const chat = new Conversation(source)
+    const qHandler = (res, convo) => {}
+
+    chat.on('add_message', (source, message) => {
+      resolve({ source, message })
     })
 
-    t.false(chat.queue.length > 0)
+    chat.ask((chat) => {
+      chat.ask('How are you?', qHandler)
+
+      t.deepEqual(chat.queue[0], {
+        question: 'How are you?',
+        handler: qHandler,
+        level: 1
+      })
+
+      chat.next()
+      t.false(chat.queue.length > 0)
+    })
+  }).then((value) => {
+    t.deepEqual(value, {
+      source,
+      message: 'How are you?'
+    })
   })
 })
 
 test('[Conversation#repeat] repeats previously asked question', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-  const qHandler = (res, convo) => {
-    convo.repeat()
-    convo.next()
-  }
+  return new Promise((resolve, reject) => {
+    const chat = new Conversation(source)
+    const qHandler = (res, convo) => {
+      convo.repeat()
+      convo.next()
+    }
 
-  chat.ask('Sup?', qHandler)
-  chat.next()
-  chat.emit('response', {})
-  t.deepEqual(bot.queue, [
-    { message: { text: 'Sup?' }, user: { id: '0' } },
-    { message: { text: 'Sup?' }, user: { id: '0' } }
-  ])
+    let count = 0
+    let queue = []
+    chat.on('add_message', (source, message) => {
+      queue.push({ source, message })
+      count++
+      if (count === 2) {
+        resolve(queue)
+      }
+    })
+
+    chat.ask('Sup?', qHandler)
+    chat.next()
+    chat.emit('response', {})
+  }).then((value) => {
+    t.deepEqual(value[0], { source, message: 'Sup?' })
+    t.deepEqual(value[1], { source, message: 'Sup?' })
+  })
 })
 
 test('[Conversation#repeat] repeats question with ammendment', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-  const qHandler = (res, convo) => {
-    convo.repeat('How are you?')
-    convo.next()
-  }
+  return new Promise((resolve, reject) => {
+    const chat = new Conversation(source)
+    const qHandler = (res, convo) => {
+      convo.repeat('How are you?')
+      convo.next()
+    }
 
-  chat.ask('Sup?', qHandler)
-  chat.next()
-  chat.emit('response', {})
-  t.deepEqual(bot.queue, [
-    { message: { text: 'Sup?' }, user: { id: '0' } },
-    { message: { text: 'How are you?' }, user: { id: '0' } }
-  ])
+    let count = 0
+    let queue = []
+    chat.on('add_message', (source, message) => {
+      queue.push({ source, message })
+      count++
+      if (count === 2) {
+        resolve(queue)
+      }
+    })
+
+    chat.ask('Sup?', qHandler)
+    chat.next()
+    chat.emit('response', {})
+  }).then((value) => {
+    t.deepEqual(value[0], { source, message: 'Sup?' })
+    t.deepEqual(value[1], { source, message: 'How are you?' })
+  })
 })
 
 test('[Conversation#next] sends next question; ends if none left', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-  bot.conversations.set(source.user.id, source)
+  const expectedMessages = [
+    'Question A-1',
+    'Message A-2',
+    'Question A-2',
+    'Message A-3',
+    'Question A-2b',
+    'Message A-3b',
+    'Question B-1',
+    'Message B-2',
+    'Question C-1',
+    'Message C-2'
+  ]
 
-  /** manage high-complexity conversational flows */
-  chat.ask('Question A-1', (res, convo) => {
-    chat.say('Message A-2')
-    chat.ask('Question A-2', (res, convo) => {
-      chat.say('Message A-3')
+  return new Promise((resolve, reject) => {
+    const chat = new Conversation(source)
+    let count = 0
+    let queue = []
+    chat.on('add_message', (source, message) => {
+      queue.push(message)
+      count++
+      if (count === expectedMessages.length) {
+        resolve(queue)
+      }
+    })
+    /** manage high-complexity conversational flows */
+    chat.ask('Question A-1', (res, convo) => {
+      chat.say('Message A-2')
+      chat.ask('Question A-2', (res, convo) => {
+        chat.say('Message A-3')
+        chat.next()
+        chat.emit('response', {})
+      })
+
+      chat.ask('Question A-2b', (res, convo) => {
+        chat.say('Message A-3b')
+        chat.next()
+        chat.emit('response', {})
+      })
       chat.next()
       chat.emit('response', {})
     })
 
-    chat.ask('Question A-2b', (res, convo) => {
-      chat.say('Message A-3b')
-      chat.next()
+    chat.ask('Question B-1', (res, convo) => {
+      chat.say('Message B-2').next()
       chat.emit('response', {})
     })
+
+    chat.ask('Question C-1', (res, convo) => {
+      chat.say('Message C-2').next()
+    })
+
     chat.next()
     chat.emit('response', {})
+  }).then((value) => {
+    t.deepEqual(value, expectedMessages)
   })
-
-  chat.ask('Question B-1', (res, convo) => {
-    chat.say('Message B-2').next()
-    chat.emit('response', {})
-  })
-
-  chat.ask('Question C-1', (res, convo) => {
-    chat.say('Message C-2').next()
-  })
-
-  chat.next()
-  chat.emit('response', {})
-
-  t.deepEqual(bot.queue, [
-    { message: { text: 'Question A-1' }, user: { id: '0' } },
-    { message: { text: 'Message A-2' }, user: { id: '0' } },
-    { message: { text: 'Question A-2' }, user: { id: '0' } },
-    { message: { text: 'Message A-3' }, user: { id: '0' } },
-    { message: { text: 'Question A-2b' }, user: { id: '0' } },
-    { message: { text: 'Message A-3b' }, user: { id: '0' } },
-    { message: { text: 'Question B-1' }, user: { id: '0' } },
-    { message: { text: 'Message B-2' }, user: { id: '0' } },
-    { message: { text: 'Question C-1' }, user: { id: '0' } },
-    { message: { text: 'Message C-2' }, user: { id: '0' } }
-  ])
 })
 
-test('[Conversation#end] properly ends conversation', (t) => {
-  const bot = new MockBot()
-  const chat = new Conversation(source, bot)
-  bot.conversations.set(source.user.id, source)
-  chat.end()
-
-  t.false(chat.is_active)
-  t.false(chat.listeners('response').length > 0)
-  t.false(bot.conversations.has(source.user.id))
+test('[Conversation#end] emits `end` event', (t) => {
+  const chat = new Conversation(source)
+  return new Promise((resolve, reject) => {
+    chat.on('end', (chat) => {
+      resolve(chat)
+    })
+    chat.end()
+  }).then((value) => {
+    t.deepEqual(chat, value)
+    t.false(chat.is_active)
+  })
 })

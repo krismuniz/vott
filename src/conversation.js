@@ -1,10 +1,9 @@
 import { EventEmitter } from 'events'
 
 class Conversation extends EventEmitter {
-  constructor (source, bot) {
+  constructor (source) {
     super()
 
-    this.bot = bot
     this.source = source
     this.user = this.source.user
 
@@ -39,13 +38,9 @@ class Conversation extends EventEmitter {
     return this
   }
 
-  /** adds message to queue and assigns the Conversation#user object */
+  /** adds message to queue */
   say (message) {
-    message = Object.assign(
-      this.bot.process(message), { user: this.user }
-    )
-
-    this.bot.addMessage(message)
+    this.emit('add_message', this.source, message)
     return this
   }
 
@@ -113,12 +108,7 @@ class Conversation extends EventEmitter {
 
   end () {
     this.is_active = false
-    this.removeAllListeners('response')
-    this.bot.emit('chat_ended', this)
     this.emit('end', this)
-
-    this.bot.conversations.delete(this.user.id)
-    this.bot.log('chat_ended', `Conversation{${this.user.id}} ended`)
   }
 }
 
