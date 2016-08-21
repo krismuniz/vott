@@ -187,9 +187,9 @@ class Vott extends EventEmitter {
         newChat.on('add_message', this.reply.bind(this))
         newChat.on('end', (chat) => {
           chat.removeAllListeners()
+          this.conversations.delete(chat.user.id)
           this.log('chat_ended', `Conversation{${chat.user.id}} ended`)
           this.emit('chat_ended', chat)
-          this.conversations.delete(chat.user.id)
         })
         this.conversations.set(event.user.id, newChat)
 
