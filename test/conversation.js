@@ -226,6 +226,18 @@ test('[Conversation#next] sends next question; ends if none left', (t) => {
   })
 })
 
+test('[Conversation#done] emits `done` event', (t) => {
+  const chat = new Conversation(source)
+  return new Promise((resolve, reject) => {
+    chat.on('done', (chat) => {
+      resolve(chat)
+    })
+    chat.done()
+  }).then((value) => {
+    t.deepEqual(chat, value)
+  })
+})
+
 test('[Conversation#end] emits `end` event', (t) => {
   const chat = new Conversation(source)
   return new Promise((resolve, reject) => {

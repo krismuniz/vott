@@ -99,10 +99,15 @@ class Conversation extends EventEmitter {
       }
     } else {
       this.handle = null
+      this.done()
       this.end()
     }
 
     return this
+  }
+
+  done () {
+    this.emit('done', this)
   }
 
   end () {
