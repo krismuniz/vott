@@ -47,7 +47,7 @@ class Conversation extends EventEmitter {
   ask (question, handler) {
     if (typeof question !== 'function') {
       this.queue.push({
-        question: question,
+        question,
         handler,
         level: this.level
       })

@@ -133,6 +133,39 @@ test('[Conversation#ask] process question as function', (t) => {
   })
 })
 
+test('[Conversation#ask] question as function w/o subQuestions', (t) => {
+  const chat = new Conversation(source)
+
+  return new Promise((resolve, reject) => {
+    let messages = []
+
+    chat.on('add_message', (source, message) => {
+      messages.push(message)
+    })
+
+    chat.ask('How are you?', (res, chat) => {
+      chat.say('ok')
+      chat.next()
+      chat.emit('response', {})
+    })
+
+    chat.ask((chat) => {
+      chat.say('Sup.')
+      chat.next()
+      resolve(messages)
+    })
+
+    chat.next()
+    chat.emit('response', {})
+  }).then((messages) => {
+    t.deepEqual(messages, [
+      'How are you?',
+      'ok',
+      'Sup.'
+    ])
+  })
+})
+
 test('[Conversation#repeat] repeats previously asked question', (t) => {
   return new Promise((resolve, reject) => {
     const chat = new Conversation(source)
