@@ -52,7 +52,10 @@ class Conversation extends EventEmitter {
         level: this.level
       })
     } else {
-      question(this)
+      this.queue.push({
+        handler: question,
+        level: this.level
+      })
     }
 
     return this
@@ -84,7 +87,12 @@ class Conversation extends EventEmitter {
 
         this.queue.splice(this.queue.indexOf(q), 1)
 
-        this.say(q.question)
+        if (q.question) {
+          this.say(q.question)
+        } else {
+          q.handler(this)
+          this.level++
+        }
 
         if (subQuestions.length > 0 && this.level > 1) {
           this.level--
@@ -95,7 +103,13 @@ class Conversation extends EventEmitter {
         this.level = q.level
         this.handle = q.handler
         this.latest_question = q
-        this.say(q.question)
+
+        if (q.question) {
+          this.say(q.question)
+        } else {
+          q.handler(this)
+          this.level++
+        }
       }
     } else {
       this.handle = null

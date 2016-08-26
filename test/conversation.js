@@ -62,7 +62,7 @@ test('[Conversation#say] properly emits add_message event', (t) => {
 test('[Conversation#ask] adds question to queue', (t) => {
   return new Promise((resolve, reject) => {
     const chat = new Conversation(source)
-    const qHandler = (res, convo) => {}
+    const qHandler = (res, chat) => {}
 
     chat.on('add_message', (source, message) => {
       resolve({ source, message })
@@ -87,10 +87,27 @@ test('[Conversation#ask] adds question to queue', (t) => {
 test('[Conversation#ask] process question as function', (t) => {
   return new Promise((resolve, reject) => {
     const chat = new Conversation(source)
-    const qHandler = (res, convo) => {}
+    const qHandler = (res, chat) => {
+      chat.ask((chat) => {
+        chat.ask('Is it raining?', (res, chat) => {
+          chat.say('Sup.')
+          chat.next()
+          chat.emit('response', {})
+        })
+        chat.next()
+      })
+      chat.next()
+      chat.emit('response', {})
+    }
+
+    let messages = []
 
     chat.on('add_message', (source, message) => {
-      resolve({ source, message })
+      messages.push(message)
+
+      if (messages.length === 3) {
+        resolve({ source, messages })
+      }
     })
 
     chat.ask((chat) => {
@@ -103,12 +120,15 @@ test('[Conversation#ask] process question as function', (t) => {
       })
 
       chat.next()
+      chat.emit('response', {})
       t.false(chat.queue.length > 0)
     })
+
+    chat.next()
   }).then((value) => {
     t.deepEqual(value, {
       source,
-      message: 'How are you?'
+      messages: ['How are you?', 'Is it raining?', 'Sup.']
     })
   })
 })
@@ -116,9 +136,9 @@ test('[Conversation#ask] process question as function', (t) => {
 test('[Conversation#repeat] repeats previously asked question', (t) => {
   return new Promise((resolve, reject) => {
     const chat = new Conversation(source)
-    const qHandler = (res, convo) => {
-      convo.repeat()
-      convo.next()
+    const qHandler = (res, chat) => {
+      chat.repeat()
+      chat.next()
     }
 
     let count = 0
@@ -143,9 +163,9 @@ test('[Conversation#repeat] repeats previously asked question', (t) => {
 test('[Conversation#repeat] repeats question with ammendment', (t) => {
   return new Promise((resolve, reject) => {
     const chat = new Conversation(source)
-    const qHandler = (res, convo) => {
-      convo.repeat('How are you?')
-      convo.next()
+    const qHandler = (res, chat) => {
+      chat.repeat('How are you?')
+      chat.next()
     }
 
     let count = 0
@@ -188,20 +208,21 @@ test('[Conversation#next] sends next question; ends if none left', (t) => {
     chat.on('add_message', (source, message) => {
       queue.push(message)
       count++
+
       if (count === expectedMessages.length) {
         resolve(queue)
       }
     })
     /** manage high-complexity conversational flows */
-    chat.ask('Question A-1', (res, convo) => {
+    chat.ask('Question A-1', (res, chat) => {
       chat.say('Message A-2')
-      chat.ask('Question A-2', (res, convo) => {
+      chat.ask('Question A-2', (res, chat) => {
         chat.say('Message A-3')
         chat.next()
         chat.emit('response', {})
       })
 
-      chat.ask('Question A-2b', (res, convo) => {
+      chat.ask('Question A-2b', (res, chat) => {
         chat.say('Message A-3b')
         chat.next()
         chat.emit('response', {})
@@ -210,12 +231,12 @@ test('[Conversation#next] sends next question; ends if none left', (t) => {
       chat.emit('response', {})
     })
 
-    chat.ask('Question B-1', (res, convo) => {
+    chat.ask('Question B-1', (res, chat) => {
       chat.say('Message B-2').next()
       chat.emit('response', {})
     })
 
-    chat.ask('Question C-1', (res, convo) => {
+    chat.ask('Question C-1', (res, chat) => {
       chat.say('Message C-2').next()
     })
 
