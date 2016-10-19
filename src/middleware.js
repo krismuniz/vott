@@ -1,24 +1,20 @@
+const isFunction = arg => typeof arg === 'function'
+
 export class Middleware {
-  constructor (middleware = []) {
-    this._funcs = middleware
+  constructor (funcs = []) {
+    this._funcs = funcs
+      .map(f => f instanceof Array ? new Middleware(f) : f)
+      .map(f => f instanceof Middleware ? f._funcs : f)
+      .reduce((a, b) => a.concat(b), [])
+      .filter(isFunction)
     this._done = null
   }
 
-  /** adds functions to _funcs */
   use (func) {
-    if (typeof func === 'function') {
-      this._funcs.push(func)
-      return this
-    } else if (func instanceof Array) {
-      func.forEach((f) => this.use(f))
-      return this
-    } else {
-      throw TypeError('Middleware#use only accepts a function' +
-        ' (or an array of functions) as a parameter.')
-    }
+    this._funcs = this._funcs.concat(func).filter(isFunction)
+    return this
   }
 
-  /** sets the function to be executed when #run is called */
   done (func) {
     if (typeof func === 'function') {
       this._done = func
@@ -30,47 +26,25 @@ export class Middleware {
   }
 
   run (...args) {
-    if (this._done) {
-      this._done(...args)
-    } else {
-      throw Error("Middleware: No 'done' function was specified.")
-    }
-  }
+    let i = 0
 
-  apply (...args) {
-    if (this._done) {
-      if (this._funcs.length > 0) {
-        let i = 0
+    const proceed = () => {
+      const next = this._funcs[i++]
 
-        const next = () => {
-          if (args && args.length > 0) {
-            if (i !== 0) args.splice(-1, 1)
+      if (i > 1) args.pop()
 
-            if (this._funcs[i++]) {
-              args.push((...args) => {
-                next(...args)
-              })
-            } else {
-              this.run(...args)
-            }
+      args.push(() => proceed())
 
-            if (this._funcs[i - 1]) {
-              this._funcs[i - 1](...args)
-            }
-          } else {
-            throw Error('Middleware#apply requires at least one argument.')
-          }
-        }
-
-        next()
-      } else {
-        this.run(...args)
+      if (isFunction(next)) {
+        next(...args)
+      } else if (this._done) {
+        args.pop()
+        this._done(...args)
       }
-
-      return this
-    } else {
-      throw Error("Middleware: No 'done' function was specified.")
     }
+
+    proceed()
+    return this
   }
 }
 

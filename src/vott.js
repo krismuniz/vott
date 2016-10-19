@@ -71,6 +71,7 @@ class Vott extends EventEmitter {
           }
         })
       )
+
       return this
     }
   }
@@ -80,7 +81,7 @@ class Vott extends EventEmitter {
     if (this.middleware[eventType]) {
       this.middleware[eventType].done((bot, event) => {
         done(bot, event)
-      }).apply(this, event)
+      }).run(this, event)
     } else {
       done(this, event)
     }
@@ -184,6 +185,7 @@ class Vott extends EventEmitter {
     this.getChat(event.user.id, (chat) => {
       if (!chat) {
         const newChat = new Conversation(event)
+
         newChat.on('add_message', this.reply.bind(this))
         newChat.on('end', (chat) => {
           chat.removeAllListeners()
@@ -191,6 +193,7 @@ class Vott extends EventEmitter {
           this.log('chat_ended', `Conversation{${chat.user.id}} ended`)
           this.emit('chat_ended', chat)
         })
+
         this.conversations.set(event.user.id, newChat)
 
         this.log('new_chat', `Started Conversation{${event.user.id}}`)

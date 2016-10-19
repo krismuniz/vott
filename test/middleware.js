@@ -2,24 +2,26 @@ import test from 'ava'
 import Middleware from '../src/middleware'
 
 test('[Middleware#constructor] properly instantiates class', (t) => {
-  const layer = new Middleware()
   const f1 = (res, next) => {
     res.one = 'one'
     next()
   }
-  t.deepEqual(layer, {
-    _funcs: [],
-    _done: null
-  })
-  const layer2 = new Middleware([f1])
-  t.deepEqual(layer2, {
-    _funcs: [f1],
-    _done: null
-  })
+
+  const testLayer1 = new Middleware()
+  t.deepEqual(testLayer1, { _funcs: [], _done: null })
+
+  const testLayer2 = new Middleware([f1])
+  t.deepEqual(testLayer2, { _funcs: [f1], _done: null })
+
+  const testLayer3 = new Middleware(
+    [f1, testLayer2, [f1, testLayer2], 1, 'ABC']
+  )
+  t.deepEqual(testLayer3, { _funcs: [f1, f1, f1, f1], _done: null })
 })
 
 test('[Middleware#use] adds functions to _funcs', (t) => {
-  const layer = new Middleware()
+  const testLayer = new Middleware()
+
   const f1 = (res, next) => {
     res.one = 'one'
     next()
@@ -30,18 +32,12 @@ test('[Middleware#use] adds functions to _funcs', (t) => {
     next()
   }
 
-  layer.use(f1).use([f1, f2]).use([])
-  t.deepEqual(layer._funcs, [
+  testLayer.use(f1)
+  testLayer.use(f1)
+  testLayer.use(f2)
+  t.deepEqual(testLayer._funcs, [
     f1, f1, f2
   ])
-
-  t.throws(() => {
-    layer.use('')
-  })
-
-  t.throws(() => {
-    layer.use(9)
-  })
 })
 
 test('[Middleware#done] sets _done - executed when #run is called', (t) => {
@@ -59,61 +55,27 @@ test('[Middleware#done] sets _done - executed when #run is called', (t) => {
   })
 })
 
-test('[Middleware#apply] passes arguments through middleware', (t) => {
+test('[Middleware#run] passes arguments through middleware', (t) => {
   const layer = new Middleware()
-  const f1 = (res, next) => {
-    res.one = 'one'
-    next()
-  }
-
-  const f2 = (res, next) => {
-    res.two = 'two'
-    next()
-  }
-
-  layer.use(f1).use(f2)
 
   return new Promise((resolve, reject) => {
-    layer.done((res) => {
+    const f1 = (res, next) => {
+      res.one = 'one'
+      next()
+    }
+
+    const f2 = (res, next) => {
+      res.two = 'two'
+      next()
       resolve(res)
-    }).apply({ one: 'uno' })
+    }
+
+    layer.use(f1).use(f2)
+    layer.run({ one: 'uno' })
   }).then((res) => {
     t.deepEqual(res, {
       one: 'one',
       two: 'two'
     })
-  })
-})
-
-test('[Middleware#apply] throws when _done does not exist', (t) => {
-  const layer = new Middleware()
-  const f1 = (res, next) => {
-    res.one = 'one'
-    next()
-  }
-
-  layer.use(f1)
-  t.throws(() => {
-    layer.apply({ one: 'uno' })
-  })
-  t.throws(() => {
-    layer.run({ one: 'uno' })
-  })
-})
-
-test('[Middleware#apply] throws when no arguments are supplied', (t) => {
-  const layer = new Middleware()
-  const f1 = (res, next) => {
-    res.one = 'one'
-    next()
-  }
-
-  layer.done((res) => {
-    return res
-  })
-
-  layer.use(f1)
-  t.throws(() => {
-    layer.apply()
   })
 })
