@@ -116,7 +116,7 @@ test('[Conversation#ask] process question as function', (t) => {
       t.deepEqual(chat.queue[0], {
         question: 'How are you?',
         handler: qHandler,
-        level: 1
+        level: 2
       })
 
       chat.next()

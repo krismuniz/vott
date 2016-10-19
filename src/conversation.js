@@ -90,8 +90,8 @@ class Conversation extends EventEmitter {
         if (q.question) {
           this.say(q.question)
         } else {
-          q.handler(this)
           this.level++
+          q.handler(this)
         }
 
         if (subQuestions.length > 0 && this.level > 1) {
@@ -107,8 +107,8 @@ class Conversation extends EventEmitter {
         if (q.question) {
           this.say(q.question)
         } else {
-          q.handler(this)
           this.level++
+          q.handler(this)
         }
       }
     } else {
