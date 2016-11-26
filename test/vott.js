@@ -164,24 +164,6 @@ test("[Vott#inbound & Vott#outbound] don't proceed; bot hasn't started", (t) => 
   })
 })
 
-test('[Vott#log] emits log event with event object', (t) => {
-  const bot = new Vott()
-  return new Promise((resolve, reject) => {
-    bot.on('log', (botInstance, event) => {
-      resolve({ botInstance, event })
-    })
-    bot.log('test_event', { message: 'logging' }, {
-      a: 'a'
-    })
-  }).then(({ botInstance, event }) => {
-    t.deepEqual(bot, botInstance)
-    t.is(event.event_type, 'test_event')
-    t.is(event.message, 'logging')
-    t.true(typeof event.date === 'string')
-    t.deepEqual(event.payload, { a: 'a' })
-  })
-})
-
 test('[Vott#dispatch] passes dispatch event through middleware', (t) => {
   const bot = new Vott()
   const e = {

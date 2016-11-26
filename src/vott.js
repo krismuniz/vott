@@ -27,23 +27,6 @@ class Vott extends EventEmitter {
     }
   }
 
-  /** ------------------------------ LOGGING ------------------------------- */
-
-  /** emits log event with event object */
-  log (eventType, event, payload = {}) {
-    if (typeof event === 'string') {
-      event = { message: event }
-    }
-
-    event = Object.assign(event, {
-      event_type: eventType,
-      date: Date(),
-      payload
-    })
-
-    this.emit('log', this, event)
-  }
-
   /* ----------------------------- EXTENSIONS ------------------------------ */
 
   /** pass the instance to extend Vott */
@@ -115,6 +98,7 @@ class Vott extends EventEmitter {
       this.getChat(event.user.id, (chat) => {
         if (chat && event.chat_enabled) {
           const { message, event_type } = event
+
           chat.emit('response', Object.assign(message, { event_type }))
         } else {
           this.emit(event.event_type, bot, event)
@@ -180,24 +164,28 @@ class Vott extends EventEmitter {
     }
   }
 
-  /** starts a new conversation; throws if one exists */
+  /** starts a new conversation; throws if one already exists */
   chat (event, callback) {
     this.getChat(event.user.id, (chat) => {
       if (!chat) {
         const newChat = new Conversation(event)
 
         newChat.on('add_message', this.reply.bind(this))
+
         newChat.on('end', (chat) => {
           chat.removeAllListeners()
           this.conversations.delete(chat.user.id)
-          this.log('chat_ended', `Conversation{${chat.user.id}} ended`)
+
+          // emit 'chat_ended' hook
           this.emit('chat_ended', chat)
         })
 
+        // add conversation to conversations Map
         this.conversations.set(event.user.id, newChat)
 
-        this.log('new_chat', `Started Conversation{${event.user.id}}`)
-        this.emit('new_chat', newChat)
+        // emit 'chat_started' hook
+        this.emit('chat_started', newChat)
+
         callback(newChat)
       } else {
         throw new Error('You cannot start two simultaneous conversations' +
@@ -218,8 +206,8 @@ class Vott extends EventEmitter {
           thread.last_delivery = Date.now()
         }
       } else if (timeDiff > this.config.max_thread_age) {
+        // emit 'thread_expired' hook
         this.emit('thread_expired', thread)
-        this.log('thread_expired', `Thread{${t}} expired`)
         this.removeThread(t)
       }
     }
@@ -230,12 +218,19 @@ class Vott extends EventEmitter {
   /** starts the bot (if it hasn't started yet) */
   start () {
     if (!this.started) {
-      this.on('tick', () => { this.tick() })
+      // set listener for 'tick' event
+      this.on('tick', this.tick)
 
-      setInterval(() => this.emit('tick'), this.config.tick_interval)
+      // emit tick event each {tick_interval} miliseconds
+      setInterval(
+        () => this.emit('tick'),
+        this.config.tick_interval
+      )
+
       this.started = true
 
-      this.log('bot_started', 'Bot started ticking', this.config)
+      // emit 'bot_started' hook
+      this.emit('bot_started', this)
     }
 
     return this
