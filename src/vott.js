@@ -38,21 +38,19 @@ class Vott extends EventEmitter {
   /* ----------------------------- MIDDLEWARE ------------------------------ */
 
   /** adds middleware to event */
-  use (eventType, ...funcs) {
+  use (eventType, callback) {
     if (this.middleware[eventType]) {
-      this.middleware[eventType].use(funcs)
+      this.middleware[eventType].use(callback)
       return this
     } else {
       this.middleware.dispatch.use(
-        funcs.map((v) => {
-          return (bot, event, next) => {
-            if (event.event_type && event.event_type === eventType) {
-              v(bot, event, next)
-            } else {
-              next()
-            }
+        (bot, event, next) => {
+          if (event.event_type && event.event_type === eventType) {
+            callback(bot, event, next)
+          } else {
+            next()
           }
-        })
+        }
       )
 
       return this
@@ -60,31 +58,25 @@ class Vott extends EventEmitter {
   }
 
   /** passes event through middleware */
-  pass (eventType, event, done) {
+  pass (eventType, event, callback) {
     if (this.middleware[eventType]) {
-      this.middleware[eventType].done((bot, event) => {
-        done(bot, event)
-      }).run(this, event)
+      this.middleware[eventType].done(callback).run(this, event)
     } else {
-      done(this, event)
+      callback(this, event)
     }
   }
 
   /** passes inbound event through middleware */
-  inbound (event, next) {
+  inbound (event, callback) {
     if (this.started) {
-      this.pass('inbound', event, (bot, event) => {
-        next(this, event)
-      })
+      this.pass('inbound', event, callback)
     }
   }
 
   /** passes outbound event through middleware */
-  outbound (event, next) {
+  outbound (event, callback) {
     if (this.started) {
-      this.pass('outbound', event, (bot, event) => {
-        next(this, event)
-      })
+      this.pass('outbound', event, callback)
     }
   }
 
