@@ -16,7 +16,7 @@ export class Middleware {
   }
 
   done (func) {
-    if (typeof func === 'function') {
+    if (isFunction(func)) {
       this._done = func
       return this
     } else {
