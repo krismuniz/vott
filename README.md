@@ -11,7 +11,7 @@ This is a core module. It does not integrate with any module by itself. However,
 * [Facebook Messenger](https://www.github.com/krismuniz/vott-messenger)
 
 ## Contributing
-[![Dev Dependency Status](https://img.shields.io/david/dev/krismuniz/vott-messenger.svg?style=flat-square)](https://david-dm.org/krismuniz/vott-messenger) [![Code-Style:Standard](https://img.shields.io/badge/code%20style-standard-yellow.svg?style=flat-square)](http://standardjs.com/)
+[![Dev Dependency Status](https://img.shields.io/david/dev/krismuniz/vott.svg?style=flat-square)](https://david-dm.org/krismuniz/vott) [![Code-Style:Standard](https://img.shields.io/badge/code%20style-standard-yellow.svg?style=flat-square)](http://standardjs.com/)
 
 #### Bug Reports & Feature Requests
 
@@ -36,6 +36,6 @@ $ npm install && npm test
 
 ## License
 
-[The MIT License (MIT)](https://github.com/krismuniz/vott-messenger/blob/master/LICENSE.md)
+[The MIT License (MIT)](https://github.com/krismuniz/vott/blob/master/LICENSE.md)
 
 Copyright (c) 2017 [Kristian Muñiz](https://www.krismuniz.com)
