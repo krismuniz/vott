@@ -30,23 +30,23 @@ class Vott extends EventEmitter {
   /* ----------------------------- EXTENSIONS ------------------------------ */
 
   /** pass the instance to extend Vott */
-  extend (callback = (x) => x) {
-    callback(this)
+  extend (extension = (x) => x) {
+    extension(this)
     return this
   }
 
   /* ----------------------------- MIDDLEWARE ------------------------------ */
 
   /** adds middleware to event */
-  use (eventType, callback) {
+  use (eventType, middlewareFn) {
     if (this.middleware[eventType]) {
-      this.middleware[eventType].use(callback)
+      this.middleware[eventType].use(middlewareFn)
       return this
     } else {
       this.middleware.dispatch.use(
         (bot, event, next) => {
           if (event.event_type && event.event_type === eventType) {
-            callback(bot, event, next)
+            middlewareFn(bot, event, next)
           } else {
             next()
           }
@@ -58,25 +58,25 @@ class Vott extends EventEmitter {
   }
 
   /** passes event through middleware */
-  pass (eventType, event, callback) {
+  pass (eventType, event, middlewareFn) {
     if (this.middleware[eventType]) {
-      this.middleware[eventType].done(callback).run(this, event)
+      this.middleware[eventType].done(middlewareFn).run(this, event)
     } else {
-      callback(this, event)
+      middlewareFn(this, event)
     }
   }
 
   /** passes inbound event through middleware */
-  inbound (event, callback) {
+  inbound (event, middlewareFn) {
     if (this.started) {
-      this.pass('inbound', event, callback)
+      this.pass('inbound', event, middlewareFn)
     }
   }
 
   /** passes outbound event through middleware */
-  outbound (event, callback) {
+  outbound (event, middlewareFn) {
     if (this.started) {
-      this.pass('outbound', event, callback)
+      this.pass('outbound', event, middlewareFn)
     }
   }
 
@@ -146,13 +146,13 @@ class Vott extends EventEmitter {
   }
 
   /** finds existing conversations for event.user */
-  getChat (id, callback) {
+  getChat (id, handle) {
     let chat = this.conversations.get(id)
 
     if (chat && chat.is_active) {
-      callback(chat)
+      handle(chat)
     } else {
-      callback(false)
+      handle(false)
     }
   }
 

@@ -7,8 +7,8 @@ test('[Vott#constructor] properly instantiates class', (t) => {
 
   t.true(bot.started)
 
-  t.deepEqual(bot.threads, {})
-  t.deepEqual(bot.conversations, {})
+  t.deepEqual(bot.threads, new Map())
+  t.deepEqual(bot.conversations, new Map())
 
   t.deepEqual(bot.middleware, {
     inbound: new Middleware(),
@@ -162,6 +162,9 @@ test("[Vott#inbound & Vott#outbound] don't proceed; bot hasn't started", (t) => 
   bot.inbound(e, (bot, event) => {
     bot.reply(event, 'hi!')
   })
+
+  t.deepEqual(bot.threads, new Map())
+  t.deepEqual(bot.conversations, new Map())
 })
 
 test('[Vott#dispatch] passes dispatch event through middleware', (t) => {

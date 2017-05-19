@@ -7,8 +7,8 @@ class Conversation extends EventEmitter {
     this.source = source
     this.user = this.source.user
 
-    this.handle
-    this.latest_question
+    this.handle = null
+    this.latest_question = null
     this.queue = []
     this.responses = []
     this.state = {}

@@ -7,16 +7,24 @@ test('[Middleware#constructor] properly instantiates class', (t) => {
     next()
   }
 
+  const f2 = (res, next) => {
+    res.two = 'two'
+    next()
+  }
+
   const testLayer1 = new Middleware()
-  t.deepEqual(testLayer1, { _funcs: [], _done: null })
+  t.deepEqual(testLayer1._funcs, [])
+  t.deepEqual(testLayer1._done, null)
 
   const testLayer2 = new Middleware([f1])
-  t.deepEqual(testLayer2, { _funcs: [f1], _done: null })
+  t.deepEqual(testLayer2._funcs, [f1])
+  t.deepEqual(testLayer1._done, null)
 
   const testLayer3 = new Middleware(
-    [f1, testLayer2, [f1, testLayer2], 1, 'ABC']
+    [f1, testLayer2, [f2, testLayer2], 1, 'ABC']
   )
-  t.deepEqual(testLayer3, { _funcs: [f1, f1, f1, f1], _done: null })
+  t.deepEqual(testLayer3._funcs, [f1, f1, f2, f1])
+  t.deepEqual(testLayer3._done, null)
 })
 
 test('[Middleware#use] adds functions to _funcs', (t) => {
