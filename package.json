@@ -31,7 +31,7 @@
     "eslint-plugin-standard": "3.0.1",
     "eslint-plugin-import": "2.5.0",
     "eslint-plugin-node": "5.0.0",
-    "nyc": "11.0.2"
+    "nyc": "11.0.3"
   },
   "ava": {
     "require": [
