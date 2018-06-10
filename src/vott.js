@@ -1,3 +1,5 @@
+/* eslint camelcase: 0 */
+
 import { EventEmitter } from 'events'
 import Conversation from './conversation'
 import Middleware from './middleware'
